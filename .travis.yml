@@ -1,0 +1,25 @@
+sudo: required
+services:
+  - docker
+
+before_install:
+  - docker build -t manisha/react-test -f ./client/Dockerfile.dev ./client
+
+# primary test running section
+# CI= true makes sure that test scripts exits with status code 0(success) or 1 (failure)
+script:
+  - docker run -e CI=true manisha/react-test npm test
+
+# build production version of images
+after_success:
+  - docker build -t manisha/multi-client ./client
+  - docker build -t manisha/multi-nginx ./nginx
+  - docker build -t manisha/multi-server ./server
+  - docker build -t manisha/multi-worker ./worker
+  # Log in to the docker CLI
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  # take those Images and push them to docker hub
+  - docker push manisha/multi-client
+  - docker push manisha/multi-nginx
+  - docker push manisha/multi-server
+  - docker push mainline/multi-worker
